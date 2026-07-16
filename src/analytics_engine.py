@@ -8,7 +8,7 @@ Reads Excel transactions and creates financial analytics.
 import matplotlib.pyplot as plt
 from collections import defaultdict
 
-from transactions import get_all_transactions
+from .transactions import get_all_transactions
 
 
 # -------------------------------------------------
