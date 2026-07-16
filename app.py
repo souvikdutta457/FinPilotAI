@@ -149,6 +149,15 @@ def inject_custom_css() -> None:
         .fp-badge-blue { color: #60a5fa; }
         .fp-badge-yellow { color: #fbbf24; }
         .fp-badge-purple { color: #c084fc; }
+
+        /* ---------- Top toolbar nav buttons ---------- */
+        div[data-testid="stHorizontalBlock"] button[kind="secondary"],
+        div[data-testid="stHorizontalBlock"] button[kind="primary"] {
+            border-radius: 12px;
+            font-weight: 600;
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -206,29 +215,61 @@ def build_sidebar() -> str:
             index=MONTH_NAMES.index(default_month),
         )
 
+        current_year = datetime.now().year
+        year_options = list(range(current_year - 3, current_year + 2))
+        selected_year = st.selectbox(
+            "🗓️ Select Year",
+            options=year_options,
+            index=year_options.index(current_year),
+        )
+
         if st.button("⟳ Refresh Data", use_container_width=True):
             st.cache_data.clear()
             st.rerun()
 
         st.divider()
-        st.markdown("### Navigate")
-        page = st.radio(
-            "Go to",
-            options=[
-                "🏠 Dashboard",
-                "💰 Add Transaction",
-                "📋 Recent Transactions",
-                "📊 Expense Breakdown",
-                "🤖 AI Insights",
-                "📈 Analytics",
-            ],
-            label_visibility="collapsed",
-        )
-
-        st.divider()
         st.caption("FinPilot AI • Excel-powered • Local & private")
 
-    return selected_month, page
+    return selected_month, selected_year
+
+
+# ==================================================================
+# TOP TOOLBAR (page navigation)
+# ==================================================================
+
+NAV_PAGES = [
+    ("🏠", "Dashboard"),
+    ("💰", "Add Transaction"),
+    ("📋", "Recent Transactions"),
+    ("📊", "Expense Breakdown"),
+    ("🤖", "AI Insights"),
+    ("📈", "Analytics"),
+]
+
+
+def build_top_toolbar() -> str:
+    """Icon-button toolbar across the top of the page, replacing the old
+    sidebar radio list. Keeps the current page in session_state so it
+    survives reruns triggered by other widgets."""
+
+    if "fp_page" not in st.session_state:
+        st.session_state.fp_page = "Dashboard"
+
+    cols = st.columns(len(NAV_PAGES))
+    for col, (icon, label) in zip(cols, NAV_PAGES):
+        with col:
+            is_active = st.session_state.fp_page == label
+            if st.button(
+                f"{icon}  {label}",
+                key=f"nav_{label}",
+                use_container_width=True,
+                type="primary" if is_active else "secondary",
+            ):
+                st.session_state.fp_page = label
+                st.rerun()
+
+    st.divider()
+    return st.session_state.fp_page
 
 
 # ==================================================================
@@ -286,9 +327,10 @@ def page_dashboard(month_sheet: str) -> None:
 # PAGE: ADD TRANSACTION
 # ==================================================================
 
-def page_add_transaction() -> None:
+def page_add_transaction(selected_month: str, selected_year: int) -> None:
     st.markdown("### 💰 Add Transaction")
     st.caption("Add a new income, expense, savings, or debt entry to your Excel workbook.")
+    st.caption(f"This entry will be recorded under **{selected_month} {selected_year}** (from the sidebar selection).")
 
     with st.form("add_transaction_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
@@ -311,14 +353,22 @@ def page_add_transaction() -> None:
             if amount <= 0:
                 st.warning("Please enter an amount greater than 0.")
             else:
+                # The sidebar's Month/Year selectors are the source of
+                # truth for which period this transaction belongs to.
+                # Previously "month"/"year" were left blank/0 here, so
+                # excel_engine.normalize_transaction() fell back to
+                # deriving them from the date field instead - and since
+                # the date field defaults to "today", every transaction
+                # silently landed in the real-world current month
+                # regardless of what was selected in the sidebar.
                 transaction = {
                     "type": txn_type,
                     "category": category or "Other Expenses",
                     "amount": amount,
                     "merchant": merchant or "Unspecified",
                     "date": date_input,
-                    "month": "",
-                    "year": 0,
+                    "month": selected_month,
+                    "year": selected_year,
                     "description": description,
                 }
                 row = safe_call(
@@ -551,19 +601,20 @@ def page_analytics() -> None:
 
 def main() -> None:
     inject_custom_css()
-    selected_month, page = build_sidebar()
+    selected_month, selected_year = build_sidebar()
+    page = build_top_toolbar()
 
-    if page == "🏠 Dashboard":
+    if page == "Dashboard":
         page_dashboard(selected_month)
-    elif page == "💰 Add Transaction":
-        page_add_transaction()
-    elif page == "📋 Recent Transactions":
+    elif page == "Add Transaction":
+        page_add_transaction(selected_month, selected_year)
+    elif page == "Recent Transactions":
         page_recent_transactions()
-    elif page == "📊 Expense Breakdown":
+    elif page == "Expense Breakdown":
         page_expense_breakdown(selected_month)
-    elif page == "🤖 AI Insights":
+    elif page == "AI Insights":
         page_ai_insights(selected_month)
-    elif page == "📈 Analytics":
+    elif page == "Analytics":
         page_analytics()
 
 
