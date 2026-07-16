@@ -66,10 +66,10 @@ def inject_custom_css() -> None:
         <style>
         /* ---------- General layout ---------- */
         .main {
-            padding-top: 1.2rem;
+            padding-top: 2.5rem;
         }
         .block-container {
-            padding-top: 1.5rem;
+            padding-top: 2.5rem;
             padding-bottom: 3rem;
         }
 
@@ -151,6 +151,9 @@ def inject_custom_css() -> None:
         .fp-badge-purple { color: #c084fc; }
 
         /* ---------- Top toolbar nav buttons ---------- */
+        div[data-testid="stHorizontalBlock"] {
+            margin-top: 0.5rem;
+        }
         div[data-testid="stHorizontalBlock"] button[kind="secondary"],
         div[data-testid="stHorizontalBlock"] button[kind="primary"] {
             border-radius: 12px;
