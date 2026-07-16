@@ -5,8 +5,8 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
-import excel_engine
-import dashboard
+from src import excel_engine
+from src import dashboard
 
 def export_to_csv(output_dir="exports"):
     """Saves all your Excel transactions into a portable CSV spreadsheet."""

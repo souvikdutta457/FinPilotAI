@@ -24,7 +24,7 @@ from typing import Any
 
 from openpyxl import load_workbook
 
-import excel_engine
+from src import excel_engine
 
 # ---------------- CONFIG ---------------- #
 

@@ -16,9 +16,9 @@ from typing import Any
 
 import customtkinter as ctk
 
-import dashboard
-import excel_engine
-import transactions
+from src import dashboard
+from src import excel_engine
+from src import transactions
 
 # ---------------------------------------------------------------- #
 # THEME

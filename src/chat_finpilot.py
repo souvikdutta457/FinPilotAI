@@ -8,7 +8,7 @@ Allows conversational queries about your transaction data.
 import os
 import requests
 import pandas as pd
-import excel_engine
+from src import excel_engine
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 OLLAMA_MODEL = "llama3.2"

@@ -12,7 +12,7 @@ Generates a professional monthly financial PDF report containing:
 import os
 import pandas as pd
 from datetime import datetime
-import excel_engine
+from src import excel_engine
 
 # ReportLab imports
 from reportlab.lib.pagesizes import letter
