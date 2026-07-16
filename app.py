@@ -66,10 +66,10 @@ def inject_custom_css() -> None:
         <style>
         /* ---------- General layout ---------- */
         .main {
-            padding-top: 2.5rem;
+            padding-top: 4.5rem;
         }
         .block-container {
-            padding-top: 2.5rem;
+            padding-top: 4.5rem;
             padding-bottom: 3rem;
         }
 
@@ -152,7 +152,7 @@ def inject_custom_css() -> None:
 
         /* ---------- Top toolbar nav buttons ---------- */
         div[data-testid="stHorizontalBlock"] {
-            margin-top: 0.5rem;
+            margin-top: 2rem;
         }
         div[data-testid="stHorizontalBlock"] button[kind="secondary"],
         div[data-testid="stHorizontalBlock"] button[kind="primary"] {
@@ -227,7 +227,7 @@ def build_sidebar() -> str:
         selected_month = st.selectbox(
             "📅 Select Month",
             options=MONTH_NAMES,
-            index=MONTH_NAMES.index(default_month),
+            index=0,
         )
 
         current_year = datetime.now().year
