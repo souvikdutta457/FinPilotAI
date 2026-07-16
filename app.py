@@ -32,10 +32,10 @@ from typing import Any
 import pandas as pd
 import streamlit as st
 
-import dashboard
-import excel_engine
-import transactions
-import analytics_engine
+from src import dashboard
+from src import excel_engine
+from src import transactions
+from src import analytics_engine
 
 try:
     import ai_engine
