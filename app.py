@@ -47,8 +47,10 @@ except ImportError:
 try:
     import report_generator
     REPORT_GENERATOR_AVAILABLE = True
-except ImportError:
+    REPORT_GENERATOR_IMPORT_ERROR = None
+except ImportError as exc:
     REPORT_GENERATOR_AVAILABLE = False
+    REPORT_GENERATOR_IMPORT_ERROR = exc
 
 
 # ==================================================================
@@ -587,6 +589,8 @@ def page_reports(selected_month: str, selected_year: int) -> None:
 
     if not REPORT_GENERATOR_AVAILABLE:
         st.warning("report_generator.py could not be imported — report generation is disabled.")
+        if REPORT_GENERATOR_IMPORT_ERROR is not None:
+            st.code(str(REPORT_GENERATOR_IMPORT_ERROR))
         return
 
     st.markdown('<div class="fp-card">', unsafe_allow_html=True)
