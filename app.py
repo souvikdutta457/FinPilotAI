@@ -155,8 +155,20 @@ def inject_custom_css() -> None:
         div[data-testid="stHorizontalBlock"] button[kind="primary"] {
             border-radius: 12px;
             font-weight: 600;
-            padding-top: 10px;
-            padding-bottom: 10px;
+            padding: 12px 10px;
+            min-height: 56px;
+            height: auto;
+            white-space: normal;
+            word-wrap: break-word;
+            line-height: 1.3;
+            font-size: 0.92rem;
+        }
+        div[data-testid="stHorizontalBlock"] button[kind="secondary"] p,
+        div[data-testid="stHorizontalBlock"] button[kind="primary"] p {
+            white-space: normal;
+            overflow-wrap: break-word;
+            line-height: 1.3;
+            margin: 0;
         }
         </style>
         """,
@@ -216,11 +228,13 @@ def build_sidebar() -> str:
         )
 
         current_year = datetime.now().year
-        year_options = list(range(current_year - 3, current_year + 2))
-        selected_year = st.selectbox(
+        selected_year = st.number_input(
             "🗓️ Select Year",
-            options=year_options,
-            index=year_options.index(current_year),
+            min_value=1900,
+            max_value=9999,
+            value=current_year,
+            step=1,
+            format="%d",
         )
 
         if st.button("⟳ Refresh Data", use_container_width=True):
