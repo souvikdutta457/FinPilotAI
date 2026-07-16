@@ -26,6 +26,7 @@ file as the app's main file.
 
 from __future__ import annotations
 
+import os
 from datetime import datetime
 from typing import Any
 
@@ -42,6 +43,12 @@ try:
     AI_ENGINE_AVAILABLE = True
 except ImportError:
     AI_ENGINE_AVAILABLE = False
+
+try:
+    import report_generator
+    REPORT_GENERATOR_AVAILABLE = True
+except ImportError:
+    REPORT_GENERATOR_AVAILABLE = False
 
 
 # ==================================================================
@@ -261,6 +268,7 @@ NAV_PAGES = [
     ("📊", "Expense Breakdown"),
     ("🤖", "AI Insights"),
     ("📈", "Analytics"),
+    ("🧾", "Reports"),
 ]
 
 
@@ -570,6 +578,92 @@ def page_ai_insights(month_sheet: str) -> None:
 
 
 # ==================================================================
+# PAGE: REPORTS
+# ==================================================================
+
+def page_reports(selected_month: str, selected_year: int) -> None:
+    st.markdown("### 🧾 Monthly & Yearly Reports")
+    st.caption("Generate a professional PDF financial report for the selected month.")
+
+    if not REPORT_GENERATOR_AVAILABLE:
+        st.warning("report_generator.py could not be imported — report generation is disabled.")
+        return
+
+    st.markdown('<div class="fp-card">', unsafe_allow_html=True)
+    st.markdown(f"#### 📄 Monthly Report — {selected_month} {selected_year}")
+    st.caption(
+        "Includes Income vs Expense summary, category-wise spending, savings rate, "
+        "top merchants, and automated recommendations."
+    )
+
+    if st.button("📄 Generate Monthly Report", type="primary"):
+        with st.spinner("Generating PDF report..."):
+            output_path = safe_call(
+                report_generator.generate_monthly_report, selected_month,
+                error_title="Error Generating Report",
+                default="",
+            )
+        if output_path:
+            st.success(f"✅ Report generated: {output_path}")
+            try:
+                with open(output_path, "rb") as f:
+                    pdf_bytes = f.read()
+                st.download_button(
+                    "⬇ Download PDF Report",
+                    data=pdf_bytes,
+                    file_name=os.path.basename(output_path),
+                    mime="application/pdf",
+                    use_container_width=True,
+                )
+            except OSError as exc:
+                st.error(f"⚠ Could not read generated report file: {exc}")
+        else:
+            st.info(f"No transaction data found for {selected_month} — nothing to report.")
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown('<div class="fp-card">', unsafe_allow_html=True)
+    st.markdown(f"#### 📅 Yearly Report — {selected_year}")
+    st.caption(
+        "Generates a combined report covering all months of the selected year "
+        "by running the monthly report generator for each month sheet."
+    )
+
+    if st.button("📅 Generate Yearly Report", type="secondary"):
+        yearly_reports = []
+        with st.spinner("Generating PDF reports for all months..."):
+            for month_name in MONTH_NAMES:
+                out = safe_call(
+                    report_generator.generate_monthly_report, month_name,
+                    error_title=f"Error Generating {month_name} Report",
+                    default="",
+                )
+                if out:
+                    yearly_reports.append((month_name, out))
+
+        if not yearly_reports:
+            st.info(f"No transaction data found for {selected_year} — nothing to report.")
+        else:
+            st.success(f"✅ Generated {len(yearly_reports)} monthly report(s) for {selected_year}.")
+            for month_name, out_path in yearly_reports:
+                try:
+                    with open(out_path, "rb") as f:
+                        pdf_bytes = f.read()
+                    st.download_button(
+                        f"⬇ Download {month_name} Report",
+                        data=pdf_bytes,
+                        file_name=os.path.basename(out_path),
+                        mime="application/pdf",
+                        use_container_width=True,
+                        key=f"yearly_dl_{month_name}",
+                    )
+                except OSError as exc:
+                    st.error(f"⚠ Could not read {month_name} report file: {exc}")
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
+# ==================================================================
 # PAGE: ANALYTICS
 # ==================================================================
 
@@ -633,6 +727,8 @@ def main() -> None:
         page_ai_insights(selected_month)
     elif page == "Analytics":
         page_analytics()
+    elif page == "Reports":
+        page_reports(selected_month, selected_year)
 
 
 if __name__ == "__main__":
