@@ -127,6 +127,27 @@ class FinPilotApp(ctk.CTk):
     def _selected_month(self) -> str:
         return self.month_selector.get()
 
+    def _year_for_selected_month(self, selected_month: str) -> int:
+        """
+        The Month dropdown only has month names (no year), so we infer the
+        year: use the current year, unless the selected month is later in
+        the calendar than today's month - in which case it must refer to
+        last year (e.g. it's January 2026 and the user picks "December",
+        that's December 2025, not a future December 2026).
+        """
+        now = datetime.now()
+        month_number = {name: num for num, name in dashboard.MONTH_SHEETS.items()}.get(
+            selected_month
+        )
+
+        if month_number is None:
+            return now.year
+
+        if month_number > now.month:
+            return now.year - 1
+
+        return now.year
+
     # ------------------------------------------------------------ #
     # LAYOUT: BODY
     # ------------------------------------------------------------ #
@@ -226,6 +247,17 @@ class FinPilotApp(ctk.CTk):
     def _on_save_transaction(self) -> None:
         amount_raw = self.amount_entry.get().strip()
 
+        # The Month dropdown is the source of truth for which month/year
+        # this transaction belongs to. Previously "month"/"year" were left
+        # blank here, so excel_engine.normalize_transaction() derived them
+        # from the transaction's date instead - and since the date field
+        # defaults to "today", every transaction silently landed in the
+        # real-world current month (e.g. July) no matter what month was
+        # selected in the dropdown. We now pass the selected month through
+        # explicitly so it's always what actually gets written to Excel.
+        selected_month = self._selected_month()
+        selected_year = self._year_for_selected_month(selected_month)
+
         transaction: dict[str, Any] = {
             "type": self.type_menu.get(),
             "amount": amount_raw,
@@ -233,8 +265,8 @@ class FinPilotApp(ctk.CTk):
             "merchant": self.merchant_entry.get().strip(),
             "date": self.date_entry.get().strip() or "today",
             "description": self.description_entry.get().strip(),
-            "month": "",
-            "year": "",
+            "month": selected_month,
+            "year": selected_year,
         }
 
         try:

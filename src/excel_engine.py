@@ -89,36 +89,62 @@ def normalize_transaction(transaction: dict[str, Any]) -> dict[str, Any]:
 
     This is the single place that guarantees every row written to
     Excel has a real date, month and year — no more garbage rows.
+
+    IMPORTANT: month/year are derived from the ACTUAL transaction date
+    (whatever date ends up in clean["date"]), never from "today" in
+    isolation. Previously month/year defaulted to the real-world
+    current month whenever they weren't explicitly supplied, even if
+    a specific past/future date was given — which caused every
+    transaction to be tagged with whatever month it happened to be
+    "right now", regardless of the date entered. That made the
+    per-month dashboard views appear frozen/not updating, since all
+    data collapsed into a single month bucket.
     """
+
+    from datetime import timedelta
 
     today = datetime.now()
     clean = dict(transaction)
 
-    # ---- date ----
+    # ---- date (resolve to a real datetime first) ----
     raw_date = str(clean.get("date", "")).strip().lower()
 
     if raw_date in ("", "today", "none"):
-        clean["date"] = today.strftime("%d-%m-%Y")
+        resolved_date = today
     elif raw_date == "yesterday":
-        from datetime import timedelta
-        clean["date"] = (today - timedelta(days=1)).strftime("%d-%m-%Y")
+        resolved_date = today - timedelta(days=1)
     else:
-        clean["date"] = transaction.get("date")
+        resolved_date = None
+        original_date_str = str(transaction.get("date", "")).strip()
+        for fmt in ("%d-%m-%Y", "%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y", "%d %B %Y", "%d %b %Y"):
+            try:
+                resolved_date = datetime.strptime(original_date_str, fmt)
+                break
+            except (TypeError, ValueError):
+                continue
+        # If the date string couldn't be parsed, fall back to today
+        # rather than silently writing an un-derivable month/year.
+        if resolved_date is None:
+            resolved_date = today
 
-    # ---- month ----
+    clean["date"] = resolved_date.strftime("%d-%m-%Y")
+
+    # ---- month (derived from the resolved date, not "today") ----
     raw_month = str(clean.get("month", "")).strip().lower()
     if raw_month in ("", "none", "unknown", "not specified"):
-        clean["month"] = today.strftime("%B")
+        clean["month"] = resolved_date.strftime("%B")
+    else:
+        clean["month"] = transaction.get("month")
 
-    # ---- year ----
+    # ---- year (derived from the resolved date, not "today") ----
     raw_year = clean.get("year")
     if not raw_year or str(raw_year).strip().lower() in ("none", "unknown", "0"):
-        clean["year"] = today.year
+        clean["year"] = resolved_date.year
     else:
         try:
             clean["year"] = int(raw_year)
         except (TypeError, ValueError):
-            clean["year"] = today.year
+            clean["year"] = resolved_date.year
 
     # ---- type ----
     t_type = str(clean.get("type", "")).strip()
